@@ -49,7 +49,7 @@ resource "aws_security_group" "allow_http" {
 }
 
 resource "aws_instance" "wordpress" {
-  ami           = "ami-0c55b159cbfafe1f0" # Amazon Linux 2 AMI
+  ami           = "ami-0c55b159cbfafe1f0"
   instance_type = "t2.micro"
   subnet_id     = aws_subnet.public.id
   security_groups = [aws_security_group.allow_http.id]
@@ -65,9 +65,9 @@ resource "aws_db_instance" "mysql" {
   engine               = "mysql"
   engine_version       = "5.7"
   instance_class       = "db.t2.micro"
-  db_name                 = "wordpressdb"
-  username             = "admin"
-  password             = "password"
+  db_name              = "wordpressdb"
+  username             = var.db_username
+  password             = var.db_password
   parameter_group_name = "default.mysql5.7"
   skip_final_snapshot  = true
   vpc_security_group_ids = [aws_security_group.allow_http.id]
