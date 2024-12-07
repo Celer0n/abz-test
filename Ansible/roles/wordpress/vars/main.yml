@@ -1,5 +1,0 @@
-db_name: wordpressdb
-db_username: admin
-db_password: password
-mysql_endpoint: "{{ lookup('env', 'MYSQL_ENDPOINT') }}"
-redis_endpoint: "{{ lookup('env', 'REDIS_ENDPOINT') }}"

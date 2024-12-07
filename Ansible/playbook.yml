@@ -1,8 +1,0 @@
-- hosts: wordpress
-  become: yes
-  vars_files:
-    - roles/wordpress/vars/main.yml
-
-  roles:
-    - wordpress
-    - redis
