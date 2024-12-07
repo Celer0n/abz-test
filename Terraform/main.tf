@@ -1,3 +1,16 @@
+provider "aws" {
+  region  = var.region
+}
+
+provider "vault" {
+  address = "http://192.168.0.250:8200"
+  token   = "hvs.Fa4wYKgpDNwlGEx1IHBx6k5b"
+}
+
+data "vault_generic_secret" "secret_credentials" {
+     path = "db_data/secret_tf"
+}
+
 resource "aws_vpc" "main" {
   cidr_block = "10.0.0.0/16"
 }
@@ -5,11 +18,13 @@ resource "aws_vpc" "main" {
 resource "aws_subnet" "public" {
   vpc_id     = aws_vpc.main.id
   cidr_block = "10.0.1.0/24"
+  availability_zone = "eu-west-1a"
 }
 
 resource "aws_subnet" "private" {
   vpc_id     = aws_vpc.main.id
   cidr_block = "10.0.2.0/24"
+  availability_zone = "eu-west-1b"
 }
 
 resource "aws_internet_gateway" "gw" {
@@ -49,7 +64,7 @@ resource "aws_security_group" "allow_http" {
 }
 
 resource "aws_instance" "wordpress" {
-  ami           = "ami-0c55b159cbfafe1f0"
+  ami           = "ami-0b5673b5f6e8f7fa7"
   instance_type = "t2.micro"
   subnet_id     = aws_subnet.public.id
   security_groups = [aws_security_group.allow_http.id]
@@ -63,12 +78,12 @@ resource "aws_db_instance" "mysql" {
   allocated_storage    = 20
   storage_type         = "gp2"
   engine               = "mysql"
-  engine_version       = "5.7"
+  engine_version       = "8.4.3"
   instance_class       = "db.t2.micro"
   db_name              = "wordpressdb"
-  username             = var.db_username
-  password             = var.db_password
-  parameter_group_name = "default.mysql5.7"
+  username             = data.vault_generic_secret.secret_credentials.data["username"]
+  password             = data.vault_generic_secret.secret_credentials.data["password"]
+  parameter_group_name = "default.mysql8.4.3"
   skip_final_snapshot  = true
   vpc_security_group_ids = [aws_security_group.allow_http.id]
   db_subnet_group_name = aws_db_subnet_group.private.name
@@ -76,7 +91,10 @@ resource "aws_db_instance" "mysql" {
 
 resource "aws_db_subnet_group" "private" {
   name       = "private"
-  subnet_ids = [aws_subnet.private.id]
+  subnet_ids = [
+      aws_subnet.private.id,
+      aws_subnet.public.id,
+    ]
 }
 
 resource "aws_elasticache_cluster" "redis" {
@@ -84,8 +102,8 @@ resource "aws_elasticache_cluster" "redis" {
   engine               = "redis"
   node_type            = "cache.t2.micro"
   num_cache_nodes      = 1
-  parameter_group_name = "default.redis3.2"
-  engine_version       = "3.2.10"
+  parameter_group_name = "default.redis7"
+  engine_version       = "7.0"
   port                 = 6379
   security_group_ids   = [aws_security_group.allow_http.id]
   subnet_group_name    = aws_elasticache_subnet_group.private.name
@@ -94,16 +112,4 @@ resource "aws_elasticache_cluster" "redis" {
 resource "aws_elasticache_subnet_group" "private" {
   name       = "private"
   subnet_ids = [aws_subnet.private.id]
-}
-
-output "wordpress_ip" {
-  value = aws_instance.wordpress.public_ip
-}
-
-output "mysql_endpoint" {
-  value = aws_db_instance.mysql.endpoint
-}
-
-output "redis_endpoint" {
-  value = aws_elasticache_cluster.redis.cache_nodes[0].address
 }
