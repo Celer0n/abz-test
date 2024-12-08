@@ -64,10 +64,11 @@ resource "aws_security_group" "allow_http" {
 }
 
 resource "aws_instance" "wordpress" {
-  ami           = "ami-0b5673b5f6e8f7fa7"
-  instance_type = "t2.micro"
+  ami           = var.ami
+  instance_type = var.instance_type
   subnet_id     = aws_subnet.public.id
   security_groups = [aws_security_group.allow_http.id]
+  associate_public_ip_address = true
 
   tags = {
     Name = "WordPress"
@@ -78,12 +79,12 @@ resource "aws_db_instance" "mysql" {
   allocated_storage    = 20
   storage_type         = "gp2"
   engine               = "mysql"
-  engine_version       = "8.4.3"
-  instance_class       = "db.t2.micro"
+  engine_version       = "8.0.33"
+  instance_class       = "db.t3.micro"
   db_name              = "wordpressdb"
   username             = data.vault_generic_secret.secret_credentials.data["username"]
   password             = data.vault_generic_secret.secret_credentials.data["password"]
-  parameter_group_name = "default.mysql8.4.3"
+  parameter_group_name = "default.mysql8.0"
   skip_final_snapshot  = true
   vpc_security_group_ids = [aws_security_group.allow_http.id]
   db_subnet_group_name = aws_db_subnet_group.private.name
