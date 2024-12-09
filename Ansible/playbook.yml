@@ -1,0 +1,9 @@
+---
+- name: Setup WordPress
+  hosts: wordpress
+  become: yes
+  roles:
+    - wordpress
+    - redis
+  vars_files:
+    - roles/wordpress/vars/main.yml
